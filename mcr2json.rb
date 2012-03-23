@@ -1,6 +1,12 @@
 # vim: ts=2 sw=2
 
-require 'rubycraft'
+begin
+  require 'rubycraft'
+rescue LoadError
+  $stderr.puts 'You need to install the rubycraft gem.'
+  $stderr.puts '$ sudo gem install rubycraft'
+  exit
+end
 require 'json'
 require_relative 'primitives'
 
