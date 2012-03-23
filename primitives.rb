@@ -12,19 +12,14 @@ module Mcr2Json::Primitives
     return if %w(air dead_shrubs).include?(block.name)
     return block(pos, block) if %w(
       dirt grass sand stone coal gravel ironore cactus log cobblestone
-      planks
+      planks sandstone ice leaves
     ).include?(block.name)
-    return water(pos, block) if %w(water).include?(block.name)
+    return snow(pos, block) if %w(snow).include?(block.name)
+    return water(pos, block) if %w(water watersource).include?(block.name)
     return sandstone(pos, block) if %w(sandstone).include?(block.name)
 
-    return if %w(
-      farmland seeds fence stairs unknown(102) wooden_pressure_plate slabs
-      torch door cobblestone_stairs ladder wool unknown(106) leaves
-    ).include?(block.name)
-
-    $stderr.puts block.name
-    return
-    #raise 'Unsupported block type ' + block.name
+    $stderr.puts 'Unsupported block type: ' + block.name
+    nil
   end
 
   BLOCK_COLORS = {
@@ -38,8 +33,20 @@ module Mcr2Json::Primitives
     gravel: [120,120,120].cn,
     cactus: [0, 0.75, 0],
     log: [64,50,30].cn,
-    planks: [150,125,70].cn
+    planks: [150,125,70].cn,
+    ice: [165, 194, 245].cn,
+    leaves: [0.1, 0.75, 0.1],
+
+    # unverified
+    sandstone: [0.8, 0.75, 0.2],
+    snow: [0.9, 0.9, 0.9]
   }
+
+  BLOCK_BLUR = {
+    snow: 0.9,
+    ice: 0.5
+  }
+  
   # pos in [x,y,z]
   def self.block(pos, block)
     {
@@ -47,17 +54,19 @@ module Mcr2Json::Primitives
       'position' => pos,
       'extents' => [1,1,1],
       'color' => BLOCK_COLORS[block.name.to_sym],
-      'blur' => 1.0
+      'blur' => BLOCK_BLUR[block.name.to_sym] || 1.0
     }
   end
 
-  def self.sandstone(pos, block)
+  def self.snow(pos, block)
+    height = (block.data % 7 + 1) / 8.0
+
     {
       'type' => 'box',
-      'position' => pos,
-      'extents' => [1,1,1],
-      'color' => [0.8, 0.75, 0.2],
-      'blur' => 0.75
+      'position' => [pos.x, pos.y - 0.5 + height / 2.0, pos.z],
+      'extents' => [1, height, 1],
+      'color' => BLOCK_COLORS[:snow],
+      'blur' => BLOCK_BLUR[:snow]
     }
   end
 
@@ -74,11 +83,11 @@ module Mcr2Json::Primitives
   def self.make_sun(extents)
     {
       'type' => 'box',
-      'position' => [0,extents._y+13,0],
-      'extents' => [extents._x, 0.2, extents._z],
+      'position' => [0,extents.y+20,0],
+      'extents' => [extents.x, 0.2, extents.z],
       'color' => [1,1,1],
-      'emit' => 1.0,
-      'blur' => 0.0
+      'emit' => 0.75,
+      'blur' => 1.0
     }
   end
 end
